@@ -15,6 +15,7 @@
         window.htmx = window.htmx || {};
         htmx.config = htmx.config || {};
         htmx.config.selfRequestsOnly = false;
+
     </script>
 </head>
 
@@ -35,7 +36,7 @@
                 <legend class="text-sm font-medium text-gray-700">Output Type</legend>
                 <div class="flex items-center space-x-4">
                     <label class="inline-flex items-center">
-                        <input type="radio" name="type" value="base64_pdf" checked
+                        <input type="radio" name="type" value="pdf" checked
                             class="form-radio h-4 w-4 text-indigo-600" />
                         <span class="ml-2 text-gray-700">Base64 PDF</span>
                     </label>
@@ -45,7 +46,7 @@
                         <span class="ml-2 text-gray-700">Download PDF</span>
                     </label>
                     <label class="inline-flex items-center">
-                        <input type="radio" name="type" value="raw_html" class="form-radio h-4 w-4 text-indigo-600" />
+                        <input type="radio" name="type" value="html" class="form-radio h-4 w-4 text-indigo-600" />
                         <span class="ml-2 text-gray-700">Raw HTML</span>
                     </label>
                 </div>
@@ -87,6 +88,20 @@
             Results will appear here.
         </div>
     </div>
+    <script>
+        // Listen for HTMX just before it issues the request
+        document.body.addEventListener('htmx:beforeRequest', function (evt) {
+            // Only target your converter form
+            if (evt.target.id === 'converter-form') {
+                // Turn the form fields into a JS object
+                const data = Object.fromEntries(new FormData(evt.target).entries());
+                // Tell HTMX to use JSON
+                evt.detail.headers['Content-Type'] = 'application/json';
+                // Replace the outgoing body with our JSON string
+                evt.detail.fetchConfig.body = JSON.stringify(data);
+            }
+        });
+    </script>
 </body>
 
 </html>
