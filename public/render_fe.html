@@ -9,13 +9,14 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- htmx -->
     <script src="https://unpkg.com/htmx.org@2.0.4"
-        integrity="sha384-HGfztofotfshcF7+8n44JQL2oJmowVChPTg48S+jvZoztPfvwD79OC/LTtG6dMp+" crossorigin="anonymous">
-        </script>
+        integrity="sha384-HGfztofotfshcF7+8n44JQL2oJmowVChPTg48S+jvZoztPfvwD79OC/LTtG6dMp+"
+        crossorigin="anonymous"></script>
+    <script src="https://unpkg.com/htmx.org@1.9.12/dist/ext/json-enc.js"></script>
+
     <script>
         window.htmx = window.htmx || {};
         htmx.config = htmx.config || {};
         htmx.config.selfRequestsOnly = false;
-
     </script>
 </head>
 
@@ -23,7 +24,8 @@
     <div class="w-full max-w-lg bg-white shadow-md rounded-lg p-6">
         <h1 class="text-2xl font-bold mb-4">URL Converter</h1>
 
-        <form id="converter-form" hx-post="/render" hx-target="#result" hx-indicator="#status" class="space-y-6">
+        <form id="converter-form" hx-post="/render" hx-ext='json-enc' hx-target="#result" hx-indicator="#status"
+            class="space-y-6">
             <!-- URL Input -->
             <div>
                 <label for="url" class="block text-sm font-medium text-gray-700">Enter URL</label>
@@ -75,33 +77,45 @@
 
             <!-- Submit -->
             <div>
-                <button type="submit"
-                    class="w-full py-2 px-4 bg-indigo-600 text-white rounded hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                <button type="submit" class="w-full py-2 px-4 bg-indigo-600 text-white rounded hover:bg-indigo-700
+                       focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
                     Submit
                 </button>
             </div>
         </form>
 
-        <!-- Result -->
-        <div id="result" class="mt-6 bg-gray-50 p-4 rounded min-h-[150px] text-sm text-gray-800">
-            <!-- htmx will swap in server response here -->
+        <div id="result" class="mt-6 bg-gray-50 p-4 rounded min-h-[150px] text-sm text-gray-800
+           break-words whitespace-pre-wrap">
             Results will appear here.
         </div>
+
+        <!-- Copy / Paste buttons -->
+        <div class="mt-2 flex space-x-2">
+            <button id="copy-btn" class="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700
+             focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                Copy
+            </button>
+        </div>
+
+        <script>
+            const resultEl = document.getElementById('result');
+            const copyBtn = document.getElementById('copy-btn');
+
+            copyBtn.addEventListener('click', () => {
+                const text = resultEl.innerText;
+                navigator.clipboard.writeText(text)
+                    .then(() => {
+                        copyBtn.innerText = 'Copied!';
+                        setTimeout(() => copyBtn.innerText = 'Copy', 1500);
+                    })
+                    .catch(err => {
+                        console.error('Copy failed', err);
+                    });
+            });
+
+        </script>
     </div>
-    <script>
-        // Listen for HTMX just before it issues the request
-        document.body.addEventListener('htmx:beforeRequest', function (evt) {
-            // Only target your converter form
-            if (evt.target.id === 'converter-form') {
-                // Turn the form fields into a JS object
-                const data = Object.fromEntries(new FormData(evt.target).entries());
-                // Tell HTMX to use JSON
-                evt.detail.headers['Content-Type'] = 'application/json';
-                // Replace the outgoing body with our JSON string
-                evt.detail.fetchConfig.body = JSON.stringify(data);
-            }
-        });
-    </script>
+
 </body>
 
 </html>
