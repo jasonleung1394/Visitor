@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>URL Converter</title>
+    <!-- Tailwind CSS via CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- htmx -->
+    <script src="https://unpkg.com/htmx.org@2.0.4"
+        integrity="sha384-HGfztofotfshcF7+8n44JQL2oJmowVChPTg48S+jvZoztPfvwD79OC/LTtG6dMp+" crossorigin="anonymous">
+        </script>
+    <script>
+        window.htmx = window.htmx || {};
+        htmx.config = htmx.config || {};
+        htmx.config.selfRequestsOnly = false;
+    </script>
+</head>
+
+<body class="bg-gray-100 min-h-screen flex items-center justify-center p-6">
+    <div class="w-full max-w-lg bg-white shadow-md rounded-lg p-6">
+        <h1 class="text-2xl font-bold mb-4">URL Converter</h1>
+
+        <form id="converter-form" hx-post="/render" hx-target="#result" hx-indicator="#status" class="space-y-6">
+            <!-- URL Input -->
+            <div>
+                <label for="url" class="block text-sm font-medium text-gray-700">Enter URL</label>
+                <input type="url" name="url" id="url" required placeholder="https://example.com/page"
+                    class="mt-1 block w-full rounded border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" />
+            </div>
+
+            <!-- Output Type -->
+            <fieldset class="space-y-2">
+                <legend class="text-sm font-medium text-gray-700">Output Type</legend>
+                <div class="flex items-center space-x-4">
+                    <label class="inline-flex items-center">
+                        <input type="radio" name="type" value="base64_pdf" checked
+                            class="form-radio h-4 w-4 text-indigo-600" />
+                        <span class="ml-2 text-gray-700">Base64 PDF</span>
+                    </label>
+                    <label class="inline-flex items-center">
+                        <input type="radio" name="type" value="download_pdf"
+                            class="form-radio h-4 w-4 text-indigo-600" />
+                        <span class="ml-2 text-gray-700">Download PDF</span>
+                    </label>
+                    <label class="inline-flex items-center">
+                        <input type="radio" name="type" value="raw_html" class="form-radio h-4 w-4 text-indigo-600" />
+                        <span class="ml-2 text-gray-700">Raw HTML</span>
+                    </label>
+                </div>
+            </fieldset>
+
+            <!-- Aspect Ratio -->
+            <div>
+                <label for="aspect" class="block text-sm font-medium text-gray-700">Aspect Ratio</label>
+                <select id="aspect" name="aspect_ratio"
+                    class="mt-1 block w-full rounded border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                    <option value="16:9">16:9</option>
+                    <option value="4:3">4:3</option>
+                    <option value="1:1">1:1</option>
+                    <option value="9:16">9:16</option>
+                </select>
+            </div>
+
+            <!-- Status Indicator -->
+            <div id="status" class="hidden flex items-center space-x-2 text-indigo-600">
+                <svg class="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+                </svg>
+                <span>Loading…</span>
+            </div>
+
+            <!-- Submit -->
+            <div>
+                <button type="submit"
+                    class="w-full py-2 px-4 bg-indigo-600 text-white rounded hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                    Submit
+                </button>
+            </div>
+        </form>
+
+        <!-- Result -->
+        <div id="result" class="mt-6 bg-gray-50 p-4 rounded min-h-[150px] text-sm text-gray-800">
+            <!-- htmx will swap in server response here -->
+            Results will appear here.
+        </div>
+    </div>
+</body>
+
+</html>
