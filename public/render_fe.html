@@ -25,7 +25,7 @@
         <h1 class="text-2xl font-bold mb-4">URL Converter</h1>
 
         <form id="converter-form" hx-post="/render" hx-ext='json-enc' hx-target="#result" hx-indicator="#status"
-            class="space-y-6">
+            hx-swap="none" class="space-y-6">
             <!-- URL Input -->
             <div>
                 <label for="url" class="block text-sm font-medium text-gray-700">Enter URL</label>
@@ -54,17 +54,35 @@
                 </div>
             </fieldset>
 
-            <!-- Aspect Ratio -->
-            <div>
-                <label for="aspect" class="block text-sm font-medium text-gray-700">Aspect Ratio</label>
-                <select id="aspect" name="aspect_ratio"
-                    class="mt-1 block w-full rounded border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
-                    <option value="16:9">16:9</option>
-                    <option value="4:3">4:3</option>
-                    <option value="1:1">1:1</option>
-                    <option value="9:16">9:16</option>
-                </select>
-            </div>
+            <fieldset class="space-y-2">
+                <legend class="text-sm font-medium text-gray-700">Aspect Ratio</legend>
+                <div class="flex items-center space-x-4">
+                    <label class="inline-flex items-center">
+                        <input type="radio" name="aspectMode" value="preset" checked
+                            class="form-radio h-4 w-4 text-indigo-600" />
+                        <span class="ml-2 text-gray-700">Preset</span>
+                    </label>
+                    <select id="aspectRatio" name="aspectRatio"
+                        class="form-select ml-2 rounded border-gray-300 focus:border-indigo-500 focus:ring-indigo-500">
+                        <option value="16:9">16:9</option>
+                        <option value="4:3">4:3</option>
+                        <option value="1:1">1:1</option>
+                        <option value="9:16">9:16</option>
+                    </select>
+                </div>
+                <div class="flex items-center space-x-4 mt-2">
+                    <label class="inline-flex items-center">
+                        <input type="radio" name="aspectMode" value="custom"
+                            class="form-radio h-4 w-4 text-indigo-600" />
+                        <span class="ml-2 text-gray-700">Custom</span>
+                    </label>
+                    <input type="number" name="customW" id="customW" placeholder="Width" min="1"
+                        class="ml-2 w-24 rounded border-gray-300 focus:border-indigo-500 focus:ring-indigo-500" />
+                    <span class="text-gray-500">:</span>
+                    <input type="number" name="customH" id="customH" placeholder="Height" min="1"
+                        class="w-24 rounded border-gray-300 focus:border-indigo-500 focus:ring-indigo-500" />
+                </div>
+            </fieldset>
 
             <!-- Status Indicator -->
             <div id="status" class="hidden flex items-center space-x-2 text-indigo-600">
@@ -83,12 +101,6 @@
                 </button>
             </div>
         </form>
-
-        <div id="result" class="mt-6 bg-gray-50 p-4 rounded min-h-[150px] text-sm text-gray-800
-           break-words whitespace-pre-wrap">
-            Results will appear here.
-        </div>
-
         <!-- Copy / Paste buttons -->
         <div class="mt-2 flex space-x-2">
             <button id="copy-btn" class="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700
@@ -96,10 +108,17 @@
                 Copy
             </button>
         </div>
+        <div id="result" class="mt-6 bg-gray-50 p-4 rounded min-h-[150px] text-sm text-gray-800
+           break-words whitespace-pre-wrap">
+            Results will appear here.
+        </div>
+
+
 
         <script>
             const resultEl = document.getElementById('result');
             const copyBtn = document.getElementById('copy-btn');
+            const form = document.getElementById('converter-form');
 
             copyBtn.addEventListener('click', () => {
                 const text = resultEl.innerText;
@@ -113,7 +132,67 @@
                     });
             });
 
+            form.addEventListener('htmx:afterRequest', (evt) => {
+                // parse the raw JSON response
+                let res;
+                try {
+                    res = JSON.parse(evt.detail.xhr.responseText)
+                } catch (e) {
+                    resultEl.textContent = 'Invalid JSON response'
+                    return
+                }
+
+                if (res.status !== 'success') {
+                    resultEl.textContent = res.message || 'Error'
+                    return
+                }
+
+                switch (res.type) {
+                    case 'html':
+                        resultEl.textContent = res.data.html
+                        break
+
+                    case 'pdf':
+                        resultEl.textContent = res.data.base64
+                        break
+
+                    case 'download_pdf':
+                        // decode base64 → Uint8Array
+                        const bin = atob(res.data.base64)
+                        const u8 = new Uint8Array(bin.length)
+                        for (let i = 0; i < bin.length; i++) {
+                            u8[i] = bin.charCodeAt(i)
+                        }
+                        // build a blob and trigger download
+                        const blob = new Blob([u8], { type: 'application/pdf' })
+                        const url = URL.createObjectURL(blob)
+                        const a = document.createElement('a')
+                        a.href = url
+                        a.download = 'page.pdf'
+                        document.body.appendChild(a)
+                        a.click()
+                        a.remove()
+                        URL.revokeObjectURL(url)
+                        break
+                }
+            })
+
+            const modeRadios = document.querySelectorAll('input[name="aspectMode"]');
+            const presetSelect = document.getElementById('aspectRatio');
+            const wInput = document.getElementById('customW');
+            const hInput = document.getElementById('customH');
+
+            function updateAspectUI() {
+                const isCustom = document.querySelector('input[name="aspectMode"]:checked').value === 'custom';
+                presetSelect.disabled = isCustom;
+                wInput.disabled = !isCustom;
+                hInput.disabled = !isCustom;
+            }
+
+            modeRadios.forEach(r => r.addEventListener('change', updateAspectUI));
+            updateAspectUI();  // init
         </script>
+
     </div>
 
 </body>
