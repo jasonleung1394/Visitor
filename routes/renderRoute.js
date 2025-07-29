@@ -3,7 +3,7 @@ const router = express.Router();
 const { renderPage } = require('../services/renderService');
 
 router.post('/', async (req, res) => {
-  const { url, type, aspectRatio, aspectMode, customW, customH } = req.body;
+  const { url, type, aspectRatio, aspectMode, customW, customH, css_selector } = req.body;
 
   if (!url) {
     return res.status(400).json({
@@ -55,7 +55,7 @@ router.post('/', async (req, res) => {
     }
 
     // For html and pdf
-    const result = await renderPage({ url, aspectRatio: ratio, type });
+    const result = await renderPage({ url, aspectRatio: ratio, type, css_selector });
     if (result.status === 'error') {
       return res.status(500).json(result);
     }

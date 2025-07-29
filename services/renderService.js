@@ -1,6 +1,6 @@
 const { chromium } = require('playwright');
 
-async function renderPage({ url, aspectRatio = '16:9', type = 'html' }) {
+async function renderPage({ url, aspectRatio = '16:9', type = 'html', css_selector = [] }) {
   // simple HTML escaper
   function escapeHtml(str) {
     return str
@@ -64,11 +64,34 @@ async function renderPage({ url, aspectRatio = '16:9', type = 'html' }) {
 
     if (type === 'html') {
       const html = await page.content();
+      let selectorResults = {};
+
+      if (Array.isArray(css_selector) && css_selector.length > 0) {
+        for (const selector of css_selector) {
+          try {
+            const matches = await page.$$eval(selector, els =>
+              els.map(el => {
+                const link = el.querySelector('a');  // find first <a> inside
+                return {
+                  html: el.outerHTML.trim(),
+                  text: el.textContent.trim(),
+                  href: link ? link.href : null
+                };
+              })
+            );
+            selectorResults[selector] = matches;
+          } catch (e) {
+            selectorResults[selector] = ["error"];
+          }
+        }
+      }
+
       return {
         status: 'success',
         type: 'html',
         data: {
-          escaped: escapeHtml(html)
+          selectors: selectorResults,
+          escaped: escapeHtml(html),
         }
       };
     }
