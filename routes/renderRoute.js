@@ -11,11 +11,10 @@ router.post('/', async (req, res) => {
       message: 'Missing "url" field.'
     });
   }
-
-  if (!['pdf', 'html', 'download_pdf', 'download_pdf_api'].includes(type)) {
+  if (!['pdf', 'html', 'download_pdf', 'download_pdf_api', 'download_binary'].includes(type)) {
     return res.status(400).json({
       status: 'error',
-      message: 'Invalid "type". Must be "pdf", "html", "download_pdf", or "download_pdf_api".'
+      message: 'Invalid "type". Must be "pdf", "html", "download_pdf", "download_pdf_api", or "download_binary".'
     });
   }
 
@@ -42,6 +41,34 @@ router.post('/', async (req, res) => {
     : aspectRatio;
 
   try {
+    if (type === 'download_binary') {
+      const { chromium } = require('playwright');
+      const browser = await chromium.launch();
+      const context = await browser.newContext();
+      const page = await context.newPage();
+
+      // Start waiting for download before navigating
+      const [download] = await Promise.all([
+        page.waitForEvent('download'),
+        page.evaluate((fileUrl) => {
+          window.location.href = fileUrl; // trigger download manually
+        }, url)
+      ]);
+
+      const filePath = await download.path();
+      const suggestedName = download.suggestedFilename();
+      const buffer = require('fs').readFileSync(filePath);
+
+      await browser.close();
+
+      res.writeHead(200, {
+        'Content-Type': 'application/octet-stream',
+        'Content-Length': buffer.length,
+        'Content-Disposition': `attachment; filename="${suggestedName}"`,
+      });
+
+      return res.end(buffer);
+    }
     if (type === 'download_pdf_api') {
       const pdfBuffer = await renderPage({ url, aspectRatio: ratio, type });
 
