@@ -3,7 +3,7 @@ const router = express.Router();
 const { renderPage } = require('../services/renderService');
 
 router.post('/', async (req, res) => {
-  const { url, type, aspectRatio, customW, customH } = req.body;
+  const { url, type, aspectRatio, aspectMode, customW, customH } = req.body;
 
   if (!url) {
     return res.status(400).json({
@@ -15,12 +15,30 @@ router.post('/', async (req, res) => {
   if (!['pdf', 'html', 'download_pdf', 'download_pdf_api'].includes(type)) {
     return res.status(400).json({
       status: 'error',
-      message: 'Invalid "type". Must be "pdf", "html", or "download_pdf".'
+      message: 'Invalid "type". Must be "pdf", "html", "download_pdf", or "download_pdf_api".'
     });
   }
 
-  const ratio = (customW && customH)
-    ? `${customW}:${customH}`
+  // Preset aspect ratio dimensions
+  const presetDimensions = {
+    '16:9': { width: 1920, height: 1080 },
+    '4:3': { width: 1600, height: 1200 },
+    '21:9': { width: 2560, height: 1080 },
+    '1:1': { width: 1080, height: 1080 },
+  };
+
+  let finalW = customW;
+  let finalH = customH;
+
+  // If aspectMode is "preset" and aspectRatio exists in presets, use it
+  if (aspectMode === 'preset' && presetDimensions[aspectRatio]) {
+    finalW = finalW || presetDimensions[aspectRatio].width;
+    finalH = finalH || presetDimensions[aspectRatio].height;
+  }
+
+  // Final aspect ratio string
+  const ratio = (finalW && finalH)
+    ? `${finalW}:${finalH}`
     : aspectRatio;
 
   try {
@@ -33,10 +51,10 @@ router.post('/', async (req, res) => {
         'Content-Disposition': 'attachment; filename="rendered.pdf"',
       });
 
-      return res.end(pdfBuffer); // ensures raw binary download
+      return res.end(pdfBuffer);
     }
 
-    // Otherwise, keep returning JSON
+    // For html and pdf
     const result = await renderPage({ url, aspectRatio: ratio, type });
     if (result.status === 'error') {
       return res.status(500).json(result);
