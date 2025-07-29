@@ -56,6 +56,11 @@ async function renderPage({ url, aspectRatio = '16:9', type = 'html' }) {
         }
       };
     }
+    if (type === 'download_pdf_api') {
+      const buf = await page.pdf(pdfOpts);
+      await browser.close();   // ensure browser closes here
+      return buf;              // RAW binary, nothing else
+    }
 
     if (type === 'html') {
       const html = await page.content();
