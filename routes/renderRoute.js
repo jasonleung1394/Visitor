@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { renderPage } = require('../services/renderService');
-
+const { handleBinaryDownload } = require('../services/downloadBinaryService');
 router.post('/', async (req, res) => {
   const { url, type, aspectRatio, aspectMode, customW, customH, css_selector } = req.body;
 
@@ -42,32 +42,7 @@ router.post('/', async (req, res) => {
 
   try {
     if (type === 'download_binary') {
-      const { chromium } = require('playwright');
-      const browser = await chromium.launch();
-      const context = await browser.newContext();
-      const page = await context.newPage();
-
-      // Start waiting for download before navigating
-      const [download] = await Promise.all([
-        page.waitForEvent('download'),
-        page.evaluate((fileUrl) => {
-          window.location.href = fileUrl; // trigger download manually
-        }, url)
-      ]);
-
-      const filePath = await download.path();
-      const suggestedName = download.suggestedFilename();
-      const buffer = require('fs').readFileSync(filePath);
-
-      await browser.close();
-
-      res.writeHead(200, {
-        'Content-Type': 'application/octet-stream',
-        'Content-Length': buffer.length,
-        'Content-Disposition': `attachment; filename="${suggestedName}"`,
-      });
-
-      return res.end(buffer);
+      return await handleBinaryDownload(url, res);
     }
     if (type === 'download_pdf_api') {
       const pdfBuffer = await renderPage({ url, aspectRatio: ratio, type });

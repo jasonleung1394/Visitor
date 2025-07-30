@@ -44,18 +44,6 @@ async function renderPage({ url, aspectRatio = '16:9', type = 'html', css_select
       margin: { top: 0, right: 0, bottom: 0, left: 0 },
       printBackground: true
     };
-    if (type === 'download_binary') {
-      const result = await renderPage({ url, type: 'download_binary' });
-      const buffer = Buffer.from(result.data.base64, 'base64');
-
-      res.writeHead(200, {
-        'Content-Type': result.mimeType,
-        'Content-Length': buffer.length,
-        'Content-Disposition': `attachment; filename="${result.filename}"`,
-      });
-
-      return res.end(buffer);
-    }
     if (type === 'pdf' || type === 'download_pdf') {
       const buf = await page.pdf(pdfOpts);
       return {
